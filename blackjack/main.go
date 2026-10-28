@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand/v2"
+	"strings"
 	"time"
 )
 
@@ -17,8 +18,10 @@ var soft bool = false
 var suits = []string{"♠", "♥", "♦", "♣"}
 var deck, ph, dh []card
 var phv, dhv int // hand values
+var b string = "\x1b[1m"
 
 func main() {
+	clear()
 	deck = newd()
 
 	//	ph := []card{}
@@ -157,7 +160,7 @@ loop:
 		clear()
 		stats()
 
-		fmt.Printf("You both suck (push)\n")
+		fmt.Printf("You lost\n")
 	} else if phv > 21 && dhv <= 21 {
 		clear()
 		stats()
@@ -257,32 +260,20 @@ func stats() {
 	//	fmt.Printf("\nPlayer hand value: %v\nDealer hand value: %v\n\n", phv, dhv)
 
 	fmt.Printf("\n\n\n")
-	fmt.Printf("Player hand: ")
-	for _, c := range ph {
-		fmt.Print(c.String(), " ")
-	}
-	fmt.Printf("(%v)\n", phv)
+	fmt.Printf("Player hand: (%v)\n", phv)
+	prhand(ph, false)
+	//	for _, c := range ph {
+	//		fmt.Print(c.String(), " ")
+	//	}
 
 	fmt.Printf("Dealer hand: ")
-	if turn == "d" {
-		for _, c := range dh {
-			fmt.Print(c.String(), " ")
-		}
-	} else {
-		for f, c := range dh {
-			if f == 0 {
-				fmt.Print("?? ")
-				f++
-			} else {
-				fmt.Print(c.String(), " ")
-			}
 
-		}
-	}
 	if turn == "p" {
-		fmt.Printf("(%v)\n", eval(dh[1:]))
+		fmt.Printf("(%v)\n", eval(dh[:1]))
+		prhand(dh, true)
 	} else {
 		fmt.Printf("(%v)\n", eval(dh))
+		prhand(dh, false)
 	}
 }
 
@@ -290,4 +281,50 @@ func checkcard(targ []card) card {
 	lcard := targ[len(targ)-1]
 
 	return lcard
+}
+
+func (c card) lines() [3]string {
+	rank := fmt.Sprint(c.rank)
+	switch c.rank {
+	case 1:
+		rank = "A"
+	case 11:
+		rank = "J"
+	case 12:
+		rank = "Q"
+	case 13:
+		rank = "K"
+	}
+
+	width := 3
+
+	leftp := (width - len(rank)) / 2
+	center := strings.Repeat(" ", leftp) + rank + strings.Repeat(" ", width-len(rank)-leftp)
+
+	return [3]string{
+		c.suit + strings.Repeat(" ", width-1), center, strings.Repeat(" ", width-1) + c.suit,
+	}
+}
+
+func prhand(hand []card, hidden bool) {
+	back := [4]string{"?  ", " ? ", "  ?"}
+
+	for row := range 3 {
+		for i, c := range hand {
+			color := "\x1b[47;30m" // black default
+			if hidden && i == 1 {
+				color := "\x1b[47;30m" // black on white for middle row
+				if row == 0 || row == 2 {
+					color = "\x1b[47;31m" // red on white background
+				}
+				fmt.Printf("%s%s%s\x1b[0m ", b, color, back[row])
+				continue
+			}
+			if c.suit == "♥" || c.suit == "♦" {
+				color = "\x1b[47;31m"
+			}
+			fmt.Printf("%s%s%s\x1b[0m ", b, color, c.lines()[row])
+		}
+		fmt.Printf("\n")
+	}
 }
